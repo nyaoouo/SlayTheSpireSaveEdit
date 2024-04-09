@@ -110,7 +110,10 @@
                 <el-tab-pane label="Simple" name="simple">
                     <el-form class="1 p-1" label-width="auto">
                         <el-form-item label="Max Hp">
-                            <el-input-number v-model="loadedSave.data.max_health" :step="1" :min="0"></el-input-number>
+                            <el-input-number v-model="loadedSave.data.max_health" :step="10" :min="0"></el-input-number>
+                        </el-form-item>
+                        <el-form-item label="Current Hp">
+                            <el-input-number v-model="loadedSave.data.current_health" :step="10" :min="0" :max="loadedSave.data.max_health"></el-input-number>
                         </el-form-item>
                         <el-form-item label="Gold">
                             <el-input-number v-model="loadedSave.data.gold" :step="100" :min="0"></el-input-number>
