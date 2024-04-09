@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remote</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@latest/dist/css/bootstrap.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@latest/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/element-plus"></script>
+    <script src="https://unpkg.com/@element-plus/icons-vue"></script>
+    <script src="https://unpkg.com/vue-i18n@9/dist/vue-i18n.global.prod.js"></script>
+</head>
+<style>
+    body {
+        font-family: -apple-system,
+        'Nimbus Roman No9 L',
+        'PingFang SC Regular',
+        'Hiragino Sans GB',
+        'Microsoft Yahei',
+        'WenQuanYi Micro Hei',
+        'ST Heiti', sans-serif
+    }
+
+    ::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+        background-color: #F5F5F5;
+    }
+
+    ::-webkit-scrollbar-track {
+        -webkit-box-shadow: inset 0 0 6px rgb(93, 93, 93);
+        border-radius: 10px;
+        background-color: #F5F5F5;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        border-radius: 10px;
+        -webkit-box-shadow: inset 0 0 6px rgba(166, 166, 166, 0.3);
+        background-color: rgb(234, 234, 234);
+    }
+
+    .main-0 {
+        display: table;
+        position: absolute;
+        height: 100%;
+        width: 100%;
+    }
+
+    .main-1 {
+        display: table-cell;
+        vertical-align: middle;
+    }
+
+    .main-2 {
+        min-width: 700px;
+        width: 80%;
+        max-width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+    }
+</style>
+
+<body>
+<div id="app" class="main-0">
+    <el-dialog v-model="savUpload.dialogVisible" title="Upload">
+        <el-upload drag :limit="1" :auto-upload="false" :ref="el=>savUpload.ref=el" :on-change="savUpload.on_change" :on-exceed="savUpload.on_exceed">
+            <el-icon class="el-icon--upload">
+                <upload-filled/>
+            </el-icon>
+            <div class="el-upload__text">
+                Drop file here or <em>click to load</em>
+            </div>
+        </el-upload>
+        <el-divider>paste text</el-divider>
+        <el-input v-model="savUpload.inputText" type="textarea" rows="5" placeholder="paste text here"></el-input>
+        <el-button class="w-100" @click="savUpload.on_load_text(savUpload.inputText)" :disabled="!savUpload.inputText">
+            Load
+        </el-button>
+    </el-dialog>
+
+    <el-dialog v-model="savDownload.dialogVisible" title="Download">
+        <el-input v-model="savDownload.text" type="textarea" rows="5" placeholder="save text here" disabled></el-input>
+        <el-button class="w-100" @click="savDownload.download">
+            Download
+        </el-button>
+    </el-dialog>
+
+    <div style="position: absolute; bottom: 30px; right: 30px;">
+        <el-button @click="savUpload.dialogVisible=true" :icon="Icons.Upload" circle></el-button>
+        <el-button @click="savDownload.openDialog" :icon="Icons.Download" circle></el-button>
+    </div>
+    <div class="main-1">
+        <div class="main-2 shadow rounded p-3 text-center" v-if="loadedSave.data == null">
+            <h1>Please Upload Save</h1>
+        </div>
+        <div class="main-2 shadow rounded p-3" v-else>
+            <el-tabs model-value="simple">
+                <el-tab-pane label="Simple" name="simple">
+                    <el-form class="1 p-1" label-width="auto">
+                        <el-form-item label="Max Hp">
+                            <el-input-number v-model="loadedSave.data.max_health" :step="1" :min="0"></el-input-number>
+                        </el-form-item>
+                        <el-form-item label="Gold">
+                            <el-input-number v-model="loadedSave.data.gold" :step="100" :min="0"></el-input-number>
+                        </el-form-item>
+                        <el-form-item label="Hand Size">
+                            <el-input-number v-model="loadedSave.data.hand_size" :step="1" :min="1"></el-input-number>
+                        </el-form-item>
+                        <el-form-item label="Power Max">
+                            <el-input-number v-model="loadedSave.data.red" :step="1" :min="1"></el-input-number>
+                        </el-form-item>
+                    </el-form>
+                </el-tab-pane>
+                <el-tab-pane label="Cards" name="cards">
+                    <el-row>
+                        <el-col :span="8" v-for="(cData, i) in loadedSave.data.cards" :key="i">
+                            <el-form class="border m-1 p-1" label-width="auto">
+                                <el-form-item label="Card Id">
+                                    <el-select
+                                            v-model="cData.id"
+                                            filterable
+                                            placeholder="Card Id"
+                                            style="width: 150px"
+                                    >
+                                        <el-option
+                                                v-for="item in gameKeys.cards"
+                                                :key="item"
+                                                :label="$t(`cards.name.${normalizeI18NKey(item)}`)"
+                                                :value="item"
+                                        ></el-option>
+                                    </el-select>
+                                </el-form-item>
+                                <el-form-item label="Upgrades">
+                                    <el-input-number v-model="cData.upgrades" :step="1" :min="0"></el-input-number>
+                                </el-form-item>
+                                <el-form-item>
+                                    <span class="w-100 text-center">{{ $t(`cards.desc.${normalizeI18NKey(cData.id)}`) }}</span>
+                                </el-form-item>
+                                <el-form-item>
+                                    <div class="text-center w-100">
+                                        <el-button type="primary" plain :icon="Icons.DocumentCopy" @click="loadedSave.data.cards.push({...cData})"></el-button>
+                                        <el-button type="danger" plain :icon="Icons.Delete" @click="loadedSave.data.cards.splice(i, 1)"></el-button>
+                                    </div>
+                                </el-form-item>
+                            </el-form>
+                        </el-col>
+                    </el-row>
+                </el-tab-pane>
+                <el-tab-pane label="Relics" name="relics">
+                    <el-row>
+                        <el-col :span="8" v-for="(relic, i) in loadedSave.data.relics" :key="i">
+                            <el-form class="border m-1 p-1" label-width="auto">
+                                <el-form-item label="Relic Id">
+                                    <el-select
+                                            v-model="loadedSave.data.relics[i]"
+                                            filterable
+                                            placeholder="Relic Id"
+                                            style="width: 150px"
+                                    >
+                                        <el-option
+                                                v-for="item in select_relic_options(relic)"
+                                                :key="item"
+                                                :label="$t(`relics.name.${normalizeI18NKey(item)}`)"
+                                                :value="item"
+                                        ></el-option>
+                                    </el-select>
+                                </el-form-item>
+                                <el-form-item label="Counter">
+                                    <el-input-number v-model="loadedSave.data.relic_counters[i]" :step="1"></el-input-number>
+                                </el-form-item>
+                                <el-form-item>
+                                    <pre>{{ $t(`relics.desc.${normalizeI18NKey(relic)}`) }}</pre>
+                                </el-form-item>
+                                <el-form-item>
+                                    <div class="text-center w-100">
+                                        <el-button type="danger" plain :icon="Icons.Delete" @click="loadedSave.data.relics.splice(i, 1)"></el-button>
+                                    </div>
+                                </el-form-item>
+                            </el-form>
+                        </el-col>
+                        <el-col :span="8">
+                            <el-form class="border m-1 p-1" label-width="auto">
+                                <el-form-item label="Relic Id">
+                                    <el-select
+                                            v-model="relicToAdd.id"
+                                            filterable
+                                            placeholder="Relic Id"
+                                            style="width: 150px"
+                                    >
+                                        <el-option
+                                                v-for="item in select_relic_options()"
+                                                :key="item"
+                                                :label="$t(`relics.name.${normalizeI18NKey(item)}`)"
+                                                :value="item"
+                                        ></el-option>
+                                    </el-select>
+                                </el-form-item>
+                                <el-form-item label="Counter">
+                                    <el-input-number v-model="relicToAdd.counter" :step="1"></el-input-number>
+                                </el-form-item>
+                                <el-form-item>
+                                    <pre v-if="relicToAdd.id">{{ $t(`relics.desc.${normalizeI18NKey(relicToAdd.id)}`) }}</pre>
+                                    <pre v-else>Choose a relic to add</pre>
+                                </el-form-item>
+                                <el-form-item>
+                                    <div class="text-center w-100">
+                                        <el-button type="primary" plain :icon="Icons.Plus" @click="relicToAdd.add" :disabled="!relicToAdd.id">
+                                        </el-button>
+                                    </div>
+                                </el-form-item>
+                            </el-form>
+                        </el-col>
+                </el-tab-pane>
+            </el-tabs>
+        </div>
+    </div>
+</div>
+<script>
+    const _localization_file_cache = {};
+    const load_localization_file = async (lang, fn) => {
+        const key = `${lang}/${fn}`;
+        if (!(key in _localization_file_cache))
+            _localization_file_cache[key] = await (await fetch(`./localization/${lang}/${fn}.json`)).json();
+        return _localization_file_cache[key];
+    }
+
+    const normalizeI18NKey = key => key.replace(/\W/g, '_').toUpperCase();
+    const i18n = (() => {
+        const support_locales = [{lang: 'eng', name: 'English'}, {lang: 'zhs', name: '简体中文'}, {lang: 'zht', name: '繁體中文'}];
+        const load_localization = lang => Promise.all([
+            (async () => {
+                const name = {};
+                const desc = {};
+                for (const [key, {NAME: _name, DESCRIPTION: _description}] of Object.entries(await load_localization_file(lang, 'cards'))) {
+                    const _key = normalizeI18NKey(key);
+                    name[_key] = _name;
+                    desc[_key] = _description;
+                }
+                return {cards: {name, desc}};
+            })(),
+            (async () => {
+                const name = {};
+                const desc = {};
+                const flavor = {};
+                for (const [key, {NAME: _name, FLAVOR: _flavor, DESCRIPTIONS: _descriptions}] of Object.entries(await load_localization_file(lang, 'relics'))) {
+                    const _key = normalizeI18NKey(key);
+                    name[_key] = _name;
+                    desc[_key] = _descriptions.join('\n');
+                    flavor[_key] = _flavor;
+                }
+                return {relics: {name, desc, flavor}};
+            })(),
+        ]).then(res => i18n.global.setLocaleMessage(lang, Object.assign({
+            lang: support_locales.find(({lang: l}) => l === lang).name,
+        }, ...res)));
+        const res = VueI18n.createI18n({
+            locale: (() => {
+                const ls_locale = localStorage.getItem('userLocale');
+                if (ls_locale !== null) {
+                    for (const {lang} of support_locales) {
+                        if (lang === ls_locale)
+                            return ls_locale;
+                    }
+                }
+                const default_locale = (() => {
+                    switch (navigator.language) {
+                        case 'zh-CN':
+                        case 'zh-Hans':
+                            return 'zhs';
+                        case 'zh-Hant':
+                        case 'zh-TW':
+                        case 'zh-HK':
+                            return 'zht';
+                        default:
+                            return 'eng';
+                    }
+                })();
+                localStorage.setItem('userLocale', default_locale);
+                return default_locale;
+            })(),
+        });
+        Vue.watch(() => res.global.locale, locale => {
+            if (!(locale in i18n.global.messages)) load_localization(locale);
+            localStorage.setItem('userLocale', locale)
+        });
+        load_localization(res.global.locale);
+        return res;
+    })();
+
+    const App = Vue.createApp({
+        setup() {
+            const gameKeys = Vue.reactive({
+                cards: [],
+                relics: [],
+            });
+
+            const loadedSave = Vue.reactive({
+                fileName: "save.save",
+                data: null,
+            });
+
+            const select_relic_options = (relic = null) => gameKeys.relics.filter(r => r === relic || !loadedSave.data.relics.includes(r));
+
+            const relicToAdd = Vue.reactive({
+                id: "",
+                counter: 0,
+                add: () => {
+                    loadedSave.data.relics.push(relicToAdd.id);
+                    loadedSave.data.relic_counters.push(relicToAdd.counter);
+                    relicToAdd.id = "";
+                    relicToAdd.counter = 0;
+                }
+            });
+
+            const savUpload = Vue.reactive({
+                dialogVisible: false,
+                ref: null,
+                inputText: "",
+                on_load_text: s => {
+                    try {
+                        const data = JSON.parse(s);
+                        if (data) {
+                            console.log(data);
+                            loadedSave.data = data;
+                            savUpload.dialogVisible = false;
+                        }
+                    } catch (e) {
+                        console.error(e);
+                    }
+                },
+                on_change: file => {
+                    const fr = new FileReader();
+                    fr.onload = () => {
+                        const data = JSON.parse(fr.result);
+                        if (data) {
+                            console.log(data);
+                            loadedSave.data = data;
+                            savUpload.dialogVisible = false;
+                        }
+                    };
+                    fr.onerror = () => {
+                        console.log(fr.error);
+                    };
+                    fr.read(file.raw);
+                },
+                on_exceed: files => {
+                    savUpload.ref?.clearFiles();
+                    const file = files[0];
+                    file.uid = genFileId();
+                    savUpload.ref?.handleStart(file);
+                }
+            });
+
+            const savDownload = Vue.reactive({
+                dialogVisible: false,
+                text: "",
+                openDialog: () => {
+                    savDownload.text = JSON.stringify(loadedSave.data);
+                    savDownload.dialogVisible = true;
+                },
+                download: () => {
+                    const bolb = new Blob([savDownload.text], {type: 'application/json'});
+                    const url = URL.createObjectURL(bolb);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = loadedSave.fileName;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }
+            })
+
+            Vue.watch(loadedSave, data => {
+                if (data) {
+                    localStorage.setItem("__cachedSLSSave", JSON.stringify(data));
+                } else {
+                    localStorage.removeItem("__cachedSLSSave");
+                }
+            }, {deep: true})
+
+            Vue.onMounted(() => {
+                const cached = localStorage.getItem("__cachedSLSSave");
+
+                if (cached) {
+                    const _data = JSON.parse(cached);
+                    loadedSave.data = _data.data;
+                    loadedSave.fileName = _data.fileName;
+                    console.log(_data)
+                } else {
+                    savUpload.dialogVisible = true;
+                }
+
+                load_localization_file('eng', 'cards').then(res => gameKeys.cards = Object.keys(res));
+                load_localization_file('eng', 'relics').then(res => gameKeys.relics = Object.keys(res));
+            })
+
+            return {
+                gameKeys,
+                loadedSave,
+                savUpload,
+                savDownload,
+                relicToAdd,
+                normalizeI18NKey,
+                select_relic_options,
+                Icons: ElementPlusIconsVue,
+            }
+        }
+    })
+    App.use(ElementPlus);
+    App.use(i18n);
+    for (const [key, component] of Object.entries(ElementPlusIconsVue)) App.component(key, component);
+    App.mount('#app');
+</script>
+</body>
+
+</html>
